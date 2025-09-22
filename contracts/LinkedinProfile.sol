@@ -11,26 +11,26 @@ contract LinkedinProfile is SepoliaConfig {
         string startTime;
         string endTime;
         bool isActive;
+        euint32 encryptedSalary;
     }
     
     struct UserProfile {
         string name;
         string bio;
         WorkExperience[] experiences;
-        euint32 encryptedSalary;
-        mapping(address => bool) salaryViewers;
         bool profileExists;
     }
     
     mapping(address => UserProfile) private profiles;
-    mapping(address => address[]) private authorizedViewers;
+    mapping(address => mapping(uint256 => address[])) private experienceSalaryViewers;
+    mapping(address => mapping(uint256 => mapping(address => bool))) private experienceSalaryViewerPermissions;
     
     event ProfileCreated(address indexed user);
     event ProfileUpdated(address indexed user);
-    event WorkExperienceAdded(address indexed user, string company, string position);
-    event SalaryUpdated(address indexed user);
-    event ViewerAuthorized(address indexed profileOwner, address indexed viewer);
-    event ViewerRevoked(address indexed profileOwner, address indexed viewer);
+    event WorkExperienceAdded(address indexed user, uint256 indexed experienceIndex, string company, string position);
+    event ExperienceSalaryUpdated(address indexed user, uint256 indexed experienceIndex);
+    event ExperienceSalaryViewerAuthorized(address indexed profileOwner, uint256 indexed experienceIndex, address indexed viewer);
+    event ExperienceSalaryViewerRevoked(address indexed profileOwner, uint256 indexed experienceIndex, address indexed viewer);
     
     modifier profileExists(address user) {
         require(profiles[user].profileExists, "Profile does not exist");
@@ -66,19 +66,29 @@ contract LinkedinProfile is SepoliaConfig {
         string memory _company,
         string memory _position,
         string memory _startTime,
-        string memory _endTime
+        string memory _endTime,
+        externalEuint32 _encryptedSalary,
+        bytes calldata inputProof
     ) external profileExists(msg.sender) {
         UserProfile storage profile = profiles[msg.sender];
-        
+        euint32 salary = FHE.fromExternal(_encryptedSalary, inputProof);
+
+        uint256 experienceIndex = profile.experiences.length;
+
         profile.experiences.push(WorkExperience({
             company: _company,
             position: _position,
             startTime: _startTime,
             endTime: _endTime,
-            isActive: true
+            isActive: true,
+            encryptedSalary: salary
         }));
-        
-        emit WorkExperienceAdded(msg.sender, _company, _position);
+
+        FHE.allowThis(salary);
+        FHE.allow(salary, msg.sender);
+
+        emit WorkExperienceAdded(msg.sender, experienceIndex, _company, _position);
+        emit ExperienceSalaryUpdated(msg.sender, experienceIndex);
     }
     
     function updateWorkExperience(
@@ -100,38 +110,57 @@ contract LinkedinProfile is SepoliaConfig {
         emit ProfileUpdated(msg.sender);
     }
     
-    function setSalary(
+    function setExperienceSalary(
+        uint256 _experienceIndex,
         externalEuint32 _encryptedSalary,
         bytes calldata inputProof
     ) external profileExists(msg.sender) {
+        UserProfile storage profile = profiles[msg.sender];
+        require(_experienceIndex < profile.experiences.length, "Invalid experience index");
+
         euint32 salary = FHE.fromExternal(_encryptedSalary, inputProof);
-        
-        profiles[msg.sender].encryptedSalary = salary;
-        
+        profile.experiences[_experienceIndex].encryptedSalary = salary;
+
         FHE.allowThis(salary);
         FHE.allow(salary, msg.sender);
-        
-        emit SalaryUpdated(msg.sender);
+
+        emit ExperienceSalaryUpdated(msg.sender, _experienceIndex);
     }
     
-    function authorizeSalaryViewer(address _viewer) external profileExists(msg.sender) {
+    function authorizeExperienceSalaryViewer(
+        uint256 _experienceIndex,
+        address _viewer
+    ) external profileExists(msg.sender) {
+        UserProfile storage profile = profiles[msg.sender];
+        require(_experienceIndex < profile.experiences.length, "Invalid experience index");
         require(_viewer != msg.sender, "Cannot authorize yourself");
-        require(!profiles[msg.sender].salaryViewers[_viewer], "Viewer already authorized");
-        
-        profiles[msg.sender].salaryViewers[_viewer] = true;
-        authorizedViewers[msg.sender].push(_viewer);
-        
-        FHE.allow(profiles[msg.sender].encryptedSalary, _viewer);
-        
-        emit ViewerAuthorized(msg.sender, _viewer);
+        require(
+            !experienceSalaryViewerPermissions[msg.sender][_experienceIndex][_viewer],
+            "Viewer already authorized"
+        );
+
+        experienceSalaryViewerPermissions[msg.sender][_experienceIndex][_viewer] = true;
+        experienceSalaryViewers[msg.sender][_experienceIndex].push(_viewer);
+
+        FHE.allow(profile.experiences[_experienceIndex].encryptedSalary, _viewer);
+
+        emit ExperienceSalaryViewerAuthorized(msg.sender, _experienceIndex, _viewer);
     }
     
-    function revokeSalaryViewer(address _viewer) external profileExists(msg.sender) {
-        require(profiles[msg.sender].salaryViewers[_viewer], "Viewer not authorized");
-        
-        profiles[msg.sender].salaryViewers[_viewer] = false;
-        
-        address[] storage viewers = authorizedViewers[msg.sender];
+    function revokeExperienceSalaryViewer(
+        uint256 _experienceIndex,
+        address _viewer
+    ) external profileExists(msg.sender) {
+        UserProfile storage profile = profiles[msg.sender];
+        require(_experienceIndex < profile.experiences.length, "Invalid experience index");
+        require(
+            experienceSalaryViewerPermissions[msg.sender][_experienceIndex][_viewer],
+            "Viewer not authorized"
+        );
+
+        experienceSalaryViewerPermissions[msg.sender][_experienceIndex][_viewer] = false;
+
+        address[] storage viewers = experienceSalaryViewers[msg.sender][_experienceIndex];
         for (uint i = 0; i < viewers.length; i++) {
             if (viewers[i] == _viewer) {
                 viewers[i] = viewers[viewers.length - 1];
@@ -139,8 +168,8 @@ contract LinkedinProfile is SepoliaConfig {
                 break;
             }
         }
-        
-        emit ViewerRevoked(msg.sender, _viewer);
+
+        emit ExperienceSalaryViewerRevoked(msg.sender, _experienceIndex, _viewer);
     }
     
     function getProfile(address _user) external view returns (
@@ -153,12 +182,18 @@ contract LinkedinProfile is SepoliaConfig {
         return (profile.name, profile.bio, profile.experiences);
     }
     
-    function getSalary(address _user) external view profileExists(_user) returns (euint32) {
+    function getExperienceSalary(
+        address _user,
+        uint256 _experienceIndex
+    ) external view profileExists(_user) returns (euint32) {
+        UserProfile storage profile = profiles[_user];
+        require(_experienceIndex < profile.experiences.length, "Invalid experience index");
         require(
-            _user == msg.sender || profiles[_user].salaryViewers[msg.sender],
+            _user == msg.sender ||
+                experienceSalaryViewerPermissions[_user][_experienceIndex][msg.sender],
             "Not authorized to view salary"
         );
-        return profiles[_user].encryptedSalary;
+        return profile.experiences[_experienceIndex].encryptedSalary;
     }
     
     function getWorkExperienceCount(address _user) external view returns (uint256) {
@@ -186,12 +221,24 @@ contract LinkedinProfile is SepoliaConfig {
         );
     }
     
-    function getAuthorizedViewers(address _user) external view profileExists(_user) returns (address[] memory) {
+    function getExperienceSalaryViewers(
+        address _user,
+        uint256 _experienceIndex
+    ) external view profileExists(_user) returns (address[] memory) {
         require(msg.sender == _user, "Only profile owner can view authorized viewers");
-        return authorizedViewers[_user];
+        UserProfile storage profile = profiles[_user];
+        require(_experienceIndex < profile.experiences.length, "Invalid experience index");
+        return experienceSalaryViewers[_user][_experienceIndex];
     }
-    
-    function isSalaryViewerAuthorized(address _user, address _viewer) external view returns (bool) {
-        return profiles[_user].salaryViewers[_viewer];
+
+    function isExperienceSalaryViewerAuthorized(
+        address _user,
+        uint256 _experienceIndex,
+        address _viewer
+    ) external view returns (bool) {
+        if (_experienceIndex >= profiles[_user].experiences.length) {
+            return false;
+        }
+        return experienceSalaryViewerPermissions[_user][_experienceIndex][_viewer];
     }
 }

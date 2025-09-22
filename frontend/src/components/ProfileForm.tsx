@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useReadContract, useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { LINKEDIN_PROFILE_ABI } from '../contracts/LinkedinProfile';
-
-const LINKEDIN_CONTRACT_ADDRESS = '0x...'; // This will be updated after deployment
+import { LINKEDIN_PROFILE_ABI, getLinkedinProfileAddress } from '../contracts/LinkedinProfile';
 
 interface ProfileFormProps {
   userAddress: string;
@@ -43,7 +41,7 @@ export default function ProfileForm({ userAddress }: ProfileFormProps) {
 
   // Check if user has a profile
   const { data: profileData, refetch } = useReadContract({
-    address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+    address: getLinkedinProfileAddress() as `0x${string}`,
     abi: LINKEDIN_PROFILE_ABI,
     functionName: 'getProfile',
     args: [userAddress as `0x${string}`],
@@ -62,7 +60,7 @@ export default function ProfileForm({ userAddress }: ProfileFormProps) {
     if (!name || !bio) return;
 
     createProfile({
-      address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+      address: getLinkedinProfileAddress() as `0x${string}`,
       abi: LINKEDIN_PROFILE_ABI,
       functionName: 'createProfile',
       args: [name, bio],
@@ -73,7 +71,7 @@ export default function ProfileForm({ userAddress }: ProfileFormProps) {
     if (!name || !bio) return;
 
     updateProfile({
-      address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+      address: getLinkedinProfileAddress() as `0x${string}`,
       abi: LINKEDIN_PROFILE_ABI,
       functionName: 'updateProfile',
       args: [name, bio],
@@ -84,7 +82,7 @@ export default function ProfileForm({ userAddress }: ProfileFormProps) {
     if (!company || !position || !startTime || !endTime) return;
 
     addExperience({
-      address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+      address: getLinkedinProfileAddress() as `0x${string}`,
       abi: LINKEDIN_PROFILE_ABI,
       functionName: 'addWorkExperience',
       args: [company, position, startTime, endTime],

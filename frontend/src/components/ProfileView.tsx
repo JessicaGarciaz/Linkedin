@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useReadContract } from 'wagmi';
-import { LINKEDIN_PROFILE_ABI } from '../contracts/LinkedinProfile';
-
-const LINKEDIN_CONTRACT_ADDRESS = '0x...'; // This will be updated after deployment
+import { LINKEDIN_PROFILE_ABI, getLinkedinProfileAddress } from '../contracts/LinkedinProfile';
 
 interface WorkExperience {
   company: string;
@@ -17,7 +15,7 @@ export default function ProfileView() {
   const [targetAddress, setTargetAddress] = useState<string | null>(null);
 
   const { data: profileData, isLoading, error } = useReadContract({
-    address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+    address: getLinkedinProfileAddress() as `0x${string}`,
     abi: LINKEDIN_PROFILE_ABI,
     functionName: 'getProfile',
     args: targetAddress ? [targetAddress as `0x${string}`] : undefined,

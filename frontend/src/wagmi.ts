@@ -7,5 +7,3 @@ export const config = getDefaultConfig({
   chains: [sepolia],
   ssr: false,
 });
-
-export const LINKEDIN_CONTRACT_ADDRESS = '0x...'; // Will be updated after deployment

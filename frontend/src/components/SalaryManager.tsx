@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { LINKEDIN_PROFILE_ABI } from '../contracts/LinkedinProfile';
-
-const LINKEDIN_CONTRACT_ADDRESS = '0x...'; // This will be updated after deployment
+import { LINKEDIN_PROFILE_ABI, getLinkedinProfileAddress } from '../contracts/LinkedinProfile';
 
 interface SalaryManagerProps {
   userAddress: string;
@@ -51,7 +49,7 @@ export default function SalaryManager({}: SalaryManagerProps) {
     try {
       // In a real implementation, you would encrypt the salary using FHEVM
       // const encryptedInput = await fhevmInstance.createEncryptedInput(
-      //   LINKEDIN_CONTRACT_ADDRESS,
+      //   getLinkedinProfileAddress(),
       //   userAddress
       // ).add32(parseInt(salaryAmount)).encrypt();
 
@@ -60,7 +58,7 @@ export default function SalaryManager({}: SalaryManagerProps) {
       const mockProof = '0x';
 
       setSalary({
-        address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+        address: getLinkedinProfileAddress() as `0x${string}`,
         abi: LINKEDIN_PROFILE_ABI,
         functionName: 'setSalary',
         args: [mockEncryptedSalary, mockProof],
@@ -74,7 +72,7 @@ export default function SalaryManager({}: SalaryManagerProps) {
     if (!viewerAddress) return;
 
     authorizeViewer({
-      address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+      address: getLinkedinProfileAddress() as `0x${string}`,
       abi: LINKEDIN_PROFILE_ABI,
       functionName: 'authorizeSalaryViewer',
       args: [viewerAddress as `0x${string}`],
@@ -85,7 +83,7 @@ export default function SalaryManager({}: SalaryManagerProps) {
     if (!viewerAddress) return;
 
     revokeViewer({
-      address: LINKEDIN_CONTRACT_ADDRESS as `0x${string}`,
+      address: getLinkedinProfileAddress() as `0x${string}`,
       abi: LINKEDIN_PROFILE_ABI,
       functionName: 'revokeSalaryViewer',
       args: [viewerAddress as `0x${string}`],

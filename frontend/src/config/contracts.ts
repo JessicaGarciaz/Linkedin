@@ -1,5 +1,5 @@
 // LinkedinProfile contract deployed on Sepolia
-export const CONTRACT_ADDRESS = '0x1b025551810bc957C2a51193DafFae33073BA5b0';
+export const CONTRACT_ADDRESS = '0x3beC815E2132b09890048727Dd253Dc7f1fdAc18';
 
 // Generated ABI from contract artifacts - Auto-synced from LinkedinProfile.json
 export const CONTRACT_ABI = [

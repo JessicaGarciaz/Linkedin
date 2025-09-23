@@ -90,7 +90,7 @@ export function ProfileManager() {
     if (!signer || !newExperience.company || !newExperience.position || !newExperience.salary) return;
 
     if (!zamaInstance) {
-      alert('加密服务正在初始化中，请稍后再试...');
+      alert('Encryption service is initializing, please try again later...');
       return;
     }
 
@@ -136,7 +136,7 @@ export function ProfileManager() {
     if (!signer || !address) return;
 
     if (!zamaInstance) {
-      alert('加密服务正在初始化中，请稍后再试...');
+      alert('Encryption service is initializing, please try again later...');
       return;
     }
 
@@ -180,7 +180,7 @@ export function ProfileManager() {
       setDecryptedSalaries(prev => ({ ...prev, [experienceIndex]: decryptedValue.toString() }));
     } catch (error) {
       console.error('Error decrypting salary:', error);
-      alert('解密工资失败');
+      alert('Failed to decrypt salary');
     } finally {
       setIsDecrypting(false);
     }
@@ -197,10 +197,10 @@ export function ProfileManager() {
 
       setAuthorizeAddress('');
       setSelectedExperienceIndex(null);
-      alert('授权成功！');
+      alert('Authorization successful!');
     } catch (error) {
       console.error('Error authorizing viewer:', error);
-      alert('授权失败');
+      alert('Authorization failed');
     } finally {
       setIsAuthorizing(false);
     }
@@ -249,11 +249,11 @@ export function ProfileManager() {
         ) : (
           <div className="profile-display">
             <div className="profile-field">
-              <label>姓名</label>
+              <label>Name</label>
               <p className="profile-value">{name}</p>
             </div>
             <div className="profile-field">
-              <label>简介</label>
+              <label>Bio</label>
               <p className="profile-value">{bio}</p>
             </div>
           </div>
@@ -269,13 +269,13 @@ export function ProfileManager() {
               {experiences.map((exp, index) => (
                 <div key={index} className="experience-item">
                   <h3>{exp.company}</h3>
-                  <p><strong>职位：</strong>{exp.position}</p>
-                  <p><strong>时间：</strong>{exp.startTime} - {exp.endTime}</p>
+                  <p><strong>Position:</strong> {exp.position}</p>
+                  <p><strong>Period:</strong> {exp.startTime} - {exp.endTime}</p>
                   <div className="salary-section">
-                    <span><strong>工资：</strong>
+                    <span><strong>Salary:</strong>
                       {decryptedSalaries[index] ?
-                        `¥${parseInt(decryptedSalaries[index]).toLocaleString()}/年` :
-                        '[已加密]'
+                        `$${parseInt(decryptedSalaries[index]).toLocaleString()}/year` :
+                        '[Encrypted]'
                       }
                     </span>
                     {!decryptedSalaries[index] && (
@@ -284,7 +284,7 @@ export function ProfileManager() {
                         disabled={isDecrypting}
                         className="decrypt-button"
                       >
-                        {isDecrypting ? '解密中...' : '解密工资'}
+                        {isDecrypting ? 'Decrypting...' : 'Decrypt Salary'}
                       </button>
                     )}
                   </div>
@@ -374,19 +374,19 @@ export function ProfileManager() {
 
           {experiences.length > 0 && (
             <div className="authorization-section">
-              <h3>管理工资权限</h3>
-              <p>您可以授权其他用户查看您的工作经历工资信息。</p>
+              <h3>Manage Salary Permissions</h3>
+              <p>You can authorize other users to view your work experience salary information.</p>
 
               <div className="authorize-form">
                 <div className="form-group">
-                  <label htmlFor="experienceSelect">选择工作经历</label>
+                  <label htmlFor="experienceSelect">Select Work Experience</label>
                   <select
                     id="experienceSelect"
                     value={selectedExperienceIndex ?? ''}
                     onChange={(e) => setSelectedExperienceIndex(e.target.value ? parseInt(e.target.value) : null)}
                     className="form-select"
                   >
-                    <option value="">选择一个工作经历...</option>
+                    <option value="">Select a work experience...</option>
                     {experiences.map((exp, index) => (
                       <option key={index} value={index}>
                         {exp.position} - {exp.company}
@@ -396,7 +396,7 @@ export function ProfileManager() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="authorizeAddress">授权地址</label>
+                  <label htmlFor="authorizeAddress">Authorize Address</label>
                   <input
                     id="authorizeAddress"
                     type="text"
@@ -412,7 +412,7 @@ export function ProfileManager() {
                   disabled={isAuthorizing || selectedExperienceIndex === null || !authorizeAddress}
                   className="primary-button"
                 >
-                  {isAuthorizing ? '授权中...' : '授权查看'}
+                  {isAuthorizing ? 'Authorizing...' : 'Authorize Viewing'}
                 </button>
               </div>
             </div>

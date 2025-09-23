@@ -76,7 +76,7 @@ export function ProfileView() {
     if (!signer || !searchAddress) return;
 
     if (!zamaInstance) {
-      alert('加密服务正在初始化中，请稍后再试...');
+      alert('Encryption service is initializing, please try again later...');
       return;
     }
 
@@ -173,14 +173,14 @@ export function ProfileView() {
                       <h4>{exp.company}</h4>
                       <span className="experience-period">{exp.startTime} - {exp.endTime}</span>
                     </div>
-                    <p><strong>职位：</strong>{exp.position}</p>
+                    <p><strong>Position:</strong> {exp.position}</p>
 
                     <div className="salary-section">
-                      <p><strong>工资：</strong>
+                      <p><strong>Salary:</strong>
                         {decryptedSalaries[index] ? (
-                          <span className="salary-amount">¥{parseInt(decryptedSalaries[index]).toLocaleString()}/年</span>
+                          <span className="salary-amount">${parseInt(decryptedSalaries[index]).toLocaleString()}/year</span>
                         ) : (
-                          <span className="salary-hidden"> [已加密]</span>
+                          <span className="salary-hidden"> [Encrypted]</span>
                         )}
                       </p>
 
@@ -190,7 +190,7 @@ export function ProfileView() {
                           disabled={isLoading}
                           className="secondary-button"
                         >
-                          {isLoading ? '解密中...' : '解密工资'}
+                          {isLoading ? 'Decrypting...' : 'Decrypt Salary'}
                         </button>
                       )}
                     </div>

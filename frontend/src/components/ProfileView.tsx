@@ -73,7 +73,12 @@ export function ProfileView() {
 
 
   const handleDecryptSalary = async (experienceIndex: number) => {
-    if (!zamaInstance || !signer || !searchAddress) return;
+    if (!signer || !searchAddress) return;
+
+    if (!zamaInstance) {
+      alert('加密服务正在初始化中，请稍后再试...');
+      return;
+    }
 
     setIsLoading(true);
     try {

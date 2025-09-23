@@ -38,7 +38,7 @@ export function ProfileManager() {
   const [isAuthorizing, setIsAuthorizing] = useState(false);
 
   // Check if user has a profile
-  const { data: profileData, isLoading: profileLoading, refetch: refetchProfile } = useReadContract({
+  const { data: profileData, refetch: refetchProfile } = useReadContract({
     address: CONTRACT_ADDRESS,
     abi: CONTRACT_ABI,
     functionName: 'getProfile',
@@ -87,7 +87,12 @@ export function ProfileManager() {
 
 
   const handleAddExperience = async () => {
-    if (!signer || !zamaInstance || !newExperience.company || !newExperience.position || !newExperience.salary) return;
+    if (!signer || !newExperience.company || !newExperience.position || !newExperience.salary) return;
+
+    if (!zamaInstance) {
+      alert('加密服务正在初始化中，请稍后再试...');
+      return;
+    }
 
     setIsSubmitting(true);
     try {
@@ -128,7 +133,12 @@ export function ProfileManager() {
   };
 
   const handleDecryptSalary = async (experienceIndex: number) => {
-    if (!zamaInstance || !signer || !address) return;
+    if (!signer || !address) return;
+
+    if (!zamaInstance) {
+      alert('加密服务正在初始化中，请稍后再试...');
+      return;
+    }
 
     setIsDecrypting(true);
     try {
@@ -196,9 +206,6 @@ export function ProfileManager() {
     }
   };
 
-  if (profileLoading) {
-    return <div className="loading">Loading...</div>;
-  }
 
   return (
     <div className="profile-manager">
@@ -357,7 +364,7 @@ export function ProfileManager() {
 
               <button
                 onClick={handleAddExperience}
-                disabled={isSubmitting || !newExperience.company || !newExperience.position || !newExperience.salary || !zamaInstance}
+                disabled={isSubmitting || !newExperience.company || !newExperience.position || !newExperience.salary}
                 className="primary-button"
               >
                 {isSubmitting ? 'Adding...' : 'Add Experience'}

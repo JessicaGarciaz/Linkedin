@@ -3,7 +3,6 @@ import { createInstance,initSDK,SepoliaConfig } from '@zama-fhe/relayer-sdk/bund
 
 export function useZamaInstance() {
   const [instance, setInstance] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -11,7 +10,6 @@ export function useZamaInstance() {
 
     const initZama = async () => {
       try {
-        setIsLoading(true);
         setError(null);
         await initSDK()
 
@@ -25,10 +23,6 @@ export function useZamaInstance() {
         if (mounted) {
           setError('Failed to initialize encryption service');
         }
-      } finally {
-        if (mounted) {
-          setIsLoading(false);
-        }
       }
     };
 
@@ -39,5 +33,5 @@ export function useZamaInstance() {
     };
   }, []);
 
-  return { zamaInstance: instance, isLoading, error };
+  return { zamaInstance: instance, error };
 }

@@ -29,9 +29,6 @@ export function ProfileView() {
   const [viewedProfile, setViewedProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [authorizeAddress, setAuthorizeAddress] = useState('');
-  const [selectedExperienceIndex, setSelectedExperienceIndex] = useState<number | null>(null);
-  const [isAuthorizing, setIsAuthorizing] = useState(false);
   const [decryptedSalaries, setDecryptedSalaries] = useState<{[key: number]: string}>({});
 
   // Read profile data when search address changes
@@ -74,25 +71,6 @@ export function ProfileView() {
     refetch();
   };
 
-  const handleAuthorizeViewer = async () => {
-    if (!signer || selectedExperienceIndex === null || !ethers.isAddress(authorizeAddress)) return;
-
-    setIsAuthorizing(true);
-    try {
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const tx = await contract.authorizeExperienceSalaryViewer(selectedExperienceIndex, authorizeAddress);
-      await tx.wait();
-
-      setAuthorizeAddress('');
-      setSelectedExperienceIndex(null);
-      alert('Authorization granted successfully!');
-    } catch (error) {
-      console.error('Error authorizing viewer:', error);
-      alert('Error granting authorization');
-    } finally {
-      setIsAuthorizing(false);
-    }
-  };
 
   const handleDecryptSalary = async (experienceIndex: number) => {
     if (!zamaInstance || !signer || !searchAddress) return;
@@ -219,51 +197,6 @@ export function ProfileView() {
         </div>
       )}
 
-      {address === searchAddress && viewedProfile && (
-        <div className="authorization-section">
-          <h3>Manage Salary Permissions</h3>
-          <p>You can authorize other users to view the salary information for your work experiences.</p>
-
-          <div className="authorize-form">
-            <div className="form-group">
-              <label htmlFor="experienceSelect">Select Experience</label>
-              <select
-                id="experienceSelect"
-                value={selectedExperienceIndex ?? ''}
-                onChange={(e) => setSelectedExperienceIndex(e.target.value ? parseInt(e.target.value) : null)}
-                className="form-select"
-              >
-                <option value="">Select an experience...</option>
-                {viewedProfile.experiences.map((exp, index) => (
-                  <option key={index} value={index}>
-                    {exp.position} at {exp.company}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="authorizeAddress">Authorize Address</label>
-              <input
-                id="authorizeAddress"
-                type="text"
-                value={authorizeAddress}
-                onChange={(e) => setAuthorizeAddress(e.target.value)}
-                placeholder="0x..."
-                className="form-input"
-              />
-            </div>
-
-            <button
-              onClick={handleAuthorizeViewer}
-              disabled={isAuthorizing || selectedExperienceIndex === null || !authorizeAddress}
-              className="primary-button"
-            >
-              {isAuthorizing ? 'Authorizing...' : 'Grant Access'}
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

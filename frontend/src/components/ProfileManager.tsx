@@ -33,6 +33,9 @@ export function ProfileManager() {
   const [hasProfile, setHasProfile] = useState(false);
   const [decryptedSalaries, setDecryptedSalaries] = useState<{[key: number]: string}>({});
   const [isDecrypting, setIsDecrypting] = useState(false);
+  const [selectedExperienceIndex, setSelectedExperienceIndex] = useState<number | null>(null);
+  const [authorizeAddress, setAuthorizeAddress] = useState('');
+  const [isAuthorizing, setIsAuthorizing] = useState(false);
 
   // Check if user has a profile
   const { data: profileData, isLoading: profileLoading, refetch: refetchProfile } = useReadContract({
@@ -170,6 +173,26 @@ export function ProfileManager() {
       alert('解密工资失败');
     } finally {
       setIsDecrypting(false);
+    }
+  };
+
+  const handleAuthorizeViewer = async () => {
+    if (!signer || selectedExperienceIndex === null || !authorizeAddress) return;
+
+    setIsAuthorizing(true);
+    try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const tx = await contract.authorizeExperienceSalaryViewer(selectedExperienceIndex, authorizeAddress as `0x${string}`);
+      await tx.wait();
+
+      setAuthorizeAddress('');
+      setSelectedExperienceIndex(null);
+      alert('授权成功！');
+    } catch (error) {
+      console.error('Error authorizing viewer:', error);
+      alert('授权失败');
+    } finally {
+      setIsAuthorizing(false);
     }
   };
 
@@ -341,6 +364,52 @@ export function ProfileManager() {
               </button>
             </div>
           </div>
+
+          {experiences.length > 0 && (
+            <div className="authorization-section">
+              <h3>管理工资权限</h3>
+              <p>您可以授权其他用户查看您的工作经历工资信息。</p>
+
+              <div className="authorize-form">
+                <div className="form-group">
+                  <label htmlFor="experienceSelect">选择工作经历</label>
+                  <select
+                    id="experienceSelect"
+                    value={selectedExperienceIndex ?? ''}
+                    onChange={(e) => setSelectedExperienceIndex(e.target.value ? parseInt(e.target.value) : null)}
+                    className="form-select"
+                  >
+                    <option value="">选择一个工作经历...</option>
+                    {experiences.map((exp, index) => (
+                      <option key={index} value={index}>
+                        {exp.position} - {exp.company}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="authorizeAddress">授权地址</label>
+                  <input
+                    id="authorizeAddress"
+                    type="text"
+                    value={authorizeAddress}
+                    onChange={(e) => setAuthorizeAddress(e.target.value)}
+                    placeholder="0x..."
+                    className="form-input"
+                  />
+                </div>
+
+                <button
+                  onClick={handleAuthorizeViewer}
+                  disabled={isAuthorizing || selectedExperienceIndex === null || !authorizeAddress}
+                  className="primary-button"
+                >
+                  {isAuthorizing ? '授权中...' : '授权查看'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

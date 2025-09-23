@@ -1,9 +1,8 @@
-// LinkedinProfile Contract ABI and Configuration
-// Auto-generated from deployment files
+// LinkedinProfile contract deployed on Sepolia
+export const CONTRACT_ADDRESS = '0x1b025551810bc957C2a51193DafFae33073BA5b0';
 
-export const LINKEDIN_PROFILE_ADDRESS = "0x1b025551810bc957C2a51193DafFae33073BA5b0" as const;
-
-export const LINKEDIN_PROFILE_ABI = [
+// Generated ABI from contract artifacts - Auto-synced from LinkedinProfile.json
+export const CONTRACT_ABI = [
   {
     "anonymous": false,
     "inputs": [
@@ -115,7 +114,7 @@ export const LINKEDIN_PROFILE_ABI = [
         "type": "uint256"
       },
       {
-        "indexed": true,
+        "indexed": false,
         "internalType": "string",
         "name": "company",
         "type": "string"
@@ -153,7 +152,7 @@ export const LINKEDIN_PROFILE_ABI = [
         "type": "string"
       },
       {
-        "internalType": "bytes32",
+        "internalType": "externalEuint32",
         "name": "_encryptedSalary",
         "type": "bytes32"
       },
@@ -222,7 +221,7 @@ export const LINKEDIN_PROFILE_ABI = [
       {
         "internalType": "euint32",
         "name": "",
-        "type": "uint256"
+        "type": "bytes32"
       }
     ],
     "stateMutability": "view",
@@ -302,7 +301,7 @@ export const LINKEDIN_PROFILE_ABI = [
           {
             "internalType": "euint32",
             "name": "encryptedSalary",
-            "type": "uint256"
+            "type": "bytes32"
           }
         ],
         "internalType": "struct LinkedinProfile.WorkExperience[]",
@@ -406,6 +405,19 @@ export const LINKEDIN_PROFILE_ABI = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "protocolId",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "uint256",
@@ -431,7 +443,7 @@ export const LINKEDIN_PROFILE_ABI = [
         "type": "uint256"
       },
       {
-        "internalType": "bytes32",
+        "internalType": "externalEuint32",
         "name": "_encryptedSalary",
         "type": "bytes32"
       },
@@ -498,8 +510,3 @@ export const LINKEDIN_PROFILE_ABI = [
     "type": "function"
   }
 ] as const;
-
-// Helper function to get contract address - only Sepolia supported
-export const getLinkedinProfileAddress = (): string => {
-  return LINKEDIN_PROFILE_ADDRESS;
-};

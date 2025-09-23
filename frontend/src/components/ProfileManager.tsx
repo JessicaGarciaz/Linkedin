@@ -31,6 +31,8 @@ export function ProfileManager() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasProfile, setHasProfile] = useState(false);
+  const [decryptedSalaries, setDecryptedSalaries] = useState<{[key: number]: string}>({});
+  const [isDecrypting, setIsDecrypting] = useState(false);
 
   // Check if user has a profile
   const { data: profileData, isLoading: profileLoading, refetch: refetchProfile } = useReadContract({
@@ -80,22 +82,6 @@ export function ProfileManager() {
     }
   };
 
-  const handleUpdateProfile = async () => {
-    if (!signer || !name || !bio) return;
-
-    setIsSubmitting(true);
-    try {
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const tx = await contract.updateProfile(name, bio);
-      await tx.wait();
-
-      refetchProfile();
-    } catch (error) {
-      console.error('Error updating profile:', error);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
   const handleAddExperience = async () => {
     if (!signer || !zamaInstance || !newExperience.company || !newExperience.position || !newExperience.salary) return;
@@ -138,6 +124,55 @@ export function ProfileManager() {
     }
   };
 
+  const handleDecryptSalary = async (experienceIndex: number) => {
+    if (!zamaInstance || !signer || !address) return;
+
+    setIsDecrypting(true);
+    try {
+      // Get encrypted salary from contract
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const encryptedSalary = await contract.getExperienceSalary(address, experienceIndex);
+
+      // Decrypt using Zama
+      const keypair = zamaInstance.generateKeypair();
+      const handleContractPairs = [{
+        handle: encryptedSalary,
+        contractAddress: CONTRACT_ADDRESS,
+      }];
+
+      const startTimeStamp = Math.floor(Date.now() / 1000).toString();
+      const durationDays = "10";
+      const contractAddresses = [CONTRACT_ADDRESS];
+
+      const eip712 = zamaInstance.createEIP712(keypair.publicKey, contractAddresses, startTimeStamp, durationDays);
+
+      const signature = await signer.signTypedData(
+        eip712.domain,
+        { UserDecryptRequestVerification: eip712.types.UserDecryptRequestVerification },
+        eip712.message,
+      );
+
+      const result = await zamaInstance.userDecrypt(
+        handleContractPairs,
+        keypair.privateKey,
+        keypair.publicKey,
+        signature.replace("0x", ""),
+        contractAddresses,
+        address,
+        startTimeStamp,
+        durationDays,
+      );
+
+      const decryptedValue = result[encryptedSalary];
+      setDecryptedSalaries(prev => ({ ...prev, [experienceIndex]: decryptedValue.toString() }));
+    } catch (error) {
+      console.error('Error decrypting salary:', error);
+      alert('解密工资失败');
+    } finally {
+      setIsDecrypting(false);
+    }
+  };
+
   if (profileLoading) {
     return <div className="loading">Loading...</div>;
   }
@@ -147,46 +182,51 @@ export function ProfileManager() {
       <div className="profile-section">
         <h2>Profile Information</h2>
 
-        <div className="form-group">
-          <label htmlFor="name">Name</label>
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="Enter your name"
-            className="form-input"
-          />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="bio">Bio</label>
-          <textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="Tell us about yourself"
-            className="form-textarea"
-            rows={4}
-          />
-        </div>
-
         {!hasProfile ? (
-          <button
-            onClick={handleCreateProfile}
-            disabled={isSubmitting || !name || !bio}
-            className="primary-button"
-          >
-            {isSubmitting ? 'Creating...' : 'Create Profile'}
-          </button>
+          <>
+            <div className="form-group">
+              <label htmlFor="name">Name</label>
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                className="form-input"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="bio">Bio</label>
+              <textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="Tell us about yourself"
+                className="form-textarea"
+                rows={4}
+              />
+            </div>
+
+            <button
+              onClick={handleCreateProfile}
+              disabled={isSubmitting || !name || !bio}
+              className="primary-button"
+            >
+              {isSubmitting ? 'Creating...' : 'Create Profile'}
+            </button>
+          </>
         ) : (
-          <button
-            onClick={handleUpdateProfile}
-            disabled={isSubmitting || !name || !bio}
-            className="primary-button"
-          >
-            {isSubmitting ? 'Updating...' : 'Update Profile'}
-          </button>
+          <div className="profile-display">
+            <div className="profile-field">
+              <label>姓名</label>
+              <p className="profile-value">{name}</p>
+            </div>
+            <div className="profile-field">
+              <label>简介</label>
+              <p className="profile-value">{bio}</p>
+            </div>
+          </div>
         )}
       </div>
 
@@ -198,9 +238,26 @@ export function ProfileManager() {
             <div className="experiences-list">
               {experiences.map((exp, index) => (
                 <div key={index} className="experience-item">
-                  <h3>{exp.position} at {exp.company}</h3>
-                  <p>{exp.startTime} - {exp.endTime}</p>
-                  <p>Salary: {exp.salary}</p>
+                  <h3>{exp.company}</h3>
+                  <p><strong>职位：</strong>{exp.position}</p>
+                  <p><strong>时间：</strong>{exp.startTime} - {exp.endTime}</p>
+                  <div className="salary-section">
+                    <span><strong>工资：</strong>
+                      {decryptedSalaries[index] ?
+                        `¥${parseInt(decryptedSalaries[index]).toLocaleString()}/年` :
+                        '[已加密]'
+                      }
+                    </span>
+                    {!decryptedSalaries[index] && (
+                      <button
+                        onClick={() => handleDecryptSalary(index)}
+                        disabled={isDecrypting}
+                        className="decrypt-button"
+                      >
+                        {isDecrypting ? '解密中...' : '解密工资'}
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

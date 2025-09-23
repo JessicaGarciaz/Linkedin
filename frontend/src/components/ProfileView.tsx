@@ -187,16 +187,17 @@ export function ProfileView() {
                 {viewedProfile.experiences.map((exp, index) => (
                   <div key={index} className="experience-item">
                     <div className="experience-header">
-                      <h4>{exp.position} at {exp.company}</h4>
+                      <h4>{exp.company}</h4>
                       <span className="experience-period">{exp.startTime} - {exp.endTime}</span>
                     </div>
+                    <p><strong>职位：</strong>{exp.position}</p>
 
                     <div className="salary-section">
-                      <p>Salary:
+                      <p><strong>工资：</strong>
                         {decryptedSalaries[index] ? (
-                          <span className="salary-amount"> ${parseInt(decryptedSalaries[index]).toLocaleString()}/year</span>
+                          <span className="salary-amount">¥{parseInt(decryptedSalaries[index]).toLocaleString()}/年</span>
                         ) : (
-                          <span className="salary-hidden"> [Encrypted]</span>
+                          <span className="salary-hidden"> [已加密]</span>
                         )}
                       </p>
 
@@ -206,7 +207,7 @@ export function ProfileView() {
                           disabled={isLoading}
                           className="secondary-button"
                         >
-                          {isLoading ? 'Decrypting...' : 'View Salary'}
+                          {isLoading ? '解密中...' : '解密工资'}
                         </button>
                       )}
                     </div>
